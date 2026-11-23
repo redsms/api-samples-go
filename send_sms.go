@@ -1,4 +1,4 @@
-package redsms
+package main
 
 import (
 	"crypto/md5"
@@ -23,11 +23,15 @@ func required(name string) string {
 	return value
 }
 
-func request(method, path string, fields url.Values) {
-	login, key := required("REDSMS_LOGIN"), required("REDSMS_API_KEY")
-	if method == http.MethodGet && len(fields) > 0 {
-		path += "?" + fields.Encode()
+func main() {
+	if len(os.Args) != 1 {
+		log.Fatal("Запустите без аргументов: go run send_sms.go")
 	}
+	fields := url.Values{}
+	fields.Set("route", "sms")
+	fields.Set("from", required("REDSMS_FROM"))
+	fields.Set("to", required("REDSMS_TO"))
+	fields.Set("text", "Тестовое сообщение от redsms.ru")
 	keys := make([]string, 0, len(fields))
 	for k := range fields {
 		keys = append(keys, k)
@@ -37,22 +41,17 @@ func request(method, path string, fields url.Values) {
 	for _, k := range keys {
 		values.WriteString(fields.Get(k))
 	}
+	login, key := required("REDSMS_LOGIN"), required("REDSMS_API_KEY")
 	var nonce [16]byte
 	if _, err := rand.Read(nonce[:]); err != nil {
 		log.Fatal(err)
 	}
 	ts := fmt.Sprintf("%x", nonce)
-	var requestBody io.Reader
-	if method == http.MethodPost {
-		requestBody = strings.NewReader(fields.Encode())
-	}
-	req, err := http.NewRequest(method, "https://cp.redsms.ru/api/"+path, requestBody)
+	req, err := http.NewRequest(http.MethodPost, "https://cp.redsms.ru/api/message", strings.NewReader(fields.Encode()))
 	if err != nil {
 		log.Fatal(err)
 	}
-	if method == http.MethodPost {
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("login", login)
 	req.Header.Set("ts", ts)
 	req.Header.Set("sig", fmt.Sprintf("%x", md5.Sum([]byte(values.String()+ts+key))))
