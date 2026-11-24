@@ -7,7 +7,7 @@
 ## Информация об аккаунте · GET /api/client/info
 
 ```sh
-go run client_info.go
+go run client_info/main.go
 ```
 
 
@@ -18,17 +18,17 @@ go run client_info.go
 Задайте в окружении `REDSMS_FROM` (зарегистрированное имя отправителя) и `REDSMS_TO` (свой номер в международном формате). Команда отправляет одно платное SMS с текстом «Тестовое сообщение от redsms.ru».
 
 ```sh
-go run send_sms.go
+go run send_sms/main.go
 ```
 
 При HTTP 200 сохраните UUID каждого принятого сообщения из `items`. В `errors` могут одновременно быть причины отказа для других номеров.
 
 ## Статус SMS · GET /api/message/{uuid}
 
-Подставьте UUID из ответа на отправку.
+После отправки возьмите UUID из `items[0].uuid`. Передайте его в запрос статуса и прочитайте `item.status`: значение `delivered` подтверждает доставку.
 
 ```sh
-go run message_status.go UUID
+go run message_status/main.go UUID
 ```
 
 При `created`, `moderation` и `progress` можно позже повторить только команду статуса. Для SMS статус `delivered` подтверждает доставку. При HTTP 420 проверьте баланс, при 401 — подпись и разрешённые IP. При тайм-ауте запроса отправки автоматический повтор может создать дубликат.

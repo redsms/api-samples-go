@@ -8,9 +8,9 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
+
 	"os"
-	"regexp"
+
 	"time"
 )
 
@@ -23,13 +23,10 @@ func required(name string) string {
 }
 
 func main() {
-	uuidPattern := regexp.MustCompile("(?i)^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$")
-	if len(os.Args) != 2 || !uuidPattern.MatchString(os.Args[1]) {
-		log.Fatal("Укажите UUID: go run message_status.go UUID")
+	if len(os.Args) != 1 {
+		log.Fatal("Запустите без аргументов: go run client_info/main.go")
 	}
-	fields := "uuid,status,errCode"
-	query := url.Values{"fields": {fields}}
-	path := "message/" + os.Args[1] + "?" + query.Encode()
+	path := "client/info"
 	login, key := required("REDSMS_LOGIN"), required("REDSMS_API_KEY")
 	var nonce [16]byte
 	if _, err := rand.Read(nonce[:]); err != nil {
@@ -42,7 +39,7 @@ func main() {
 	}
 	req.Header.Set("login", login)
 	req.Header.Set("ts", ts)
-	req.Header.Set("sig", fmt.Sprintf("%x", md5.Sum([]byte(fields+ts+key))))
+	req.Header.Set("sig", fmt.Sprintf("%x", md5.Sum([]byte(ts+key))))
 	client := http.Client{Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	res, err := client.Do(req)
 	if err != nil {

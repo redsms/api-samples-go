@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -25,12 +26,16 @@ func required(name string) string {
 
 func main() {
 	if len(os.Args) != 1 {
-		log.Fatal("Запустите без аргументов: go run send_sms.go")
+		log.Fatal("Запустите без аргументов: go run send_sms/main.go")
 	}
 	fields := url.Values{}
 	fields.Set("route", "sms")
 	fields.Set("from", required("REDSMS_FROM"))
-	fields.Set("to", required("REDSMS_TO"))
+	recipient := required("REDSMS_TO")
+	if !regexp.MustCompile("^[+]?[1-9][0-9]{1,14}$").MatchString(recipient) {
+		log.Fatal("Укажите один номер в международном формате, например +12025550123.")
+	}
+	fields.Set("to", recipient)
 	fields.Set("text", "Тестовое сообщение от redsms.ru")
 	keys := make([]string, 0, len(fields))
 	for k := range fields {
